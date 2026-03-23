@@ -43,7 +43,7 @@ for (const lock of ["SingletonLock", "SingletonSocket", "SingletonCookie"]) {
 if (useProfile) {
   // Sync profile with rsync (much faster on subsequent runs)
   execSync(
-    `rsync -a --delete "${process.env["HOME"]}/Library/Application Support/Google/Chrome/" "${SCRAPING_DIR}/"`,
+    `rsync -a --delete "${process.env["HOME"]}/.config/google-chrome/" "${SCRAPING_DIR}/"`,
     { stdio: "pipe" },
   );
 }
@@ -65,9 +65,34 @@ const port = await getFreePort();
 // Save port so other scripts can find it
 writeFileSync(PORT_FILE, String(port));
 
+// Find Chrome/Chromium binary
+function findChrome() {
+  const candidates = [
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium-browser",
+    "/usr/bin/chromium",
+    process.env["CHROME_BIN"],
+  ].filter(Boolean);
+
+  for (const bin of candidates) {
+    try {
+      execSync(`test -x "${bin}"`, { stdio: "ignore" });
+      return bin;
+    } catch {}
+  }
+  throw new Error("Could not find Chrome/Chromium. Install chromium-browser or set CHROME_BIN.");
+}
+
+const chromeBin = findChrome();
+
+// Check if we have a display (if not, use headless mode)
+const hasDisplay = process.env["DISPLAY"] || process.env["WAYLAND_DISPLAY"];
+const headlessArgs = hasDisplay ? [] : ["--headless=new", "--no-sandbox", "--disable-gpu"];
+
 // Start Chrome in background (detached so Node can exit)
 spawn(
-  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  chromeBin,
   [
     `--remote-debugging-port=${port}`,
     `--user-data-dir=${SCRAPING_DIR}`,
@@ -75,6 +100,7 @@ spawn(
     "--disable-search-engine-choice-screen",
     "--no-first-run",
     "--disable-features=ProfilePicker",
+    ...headlessArgs,
   ],
   { detached: true, stdio: "ignore" },
 ).unref();
