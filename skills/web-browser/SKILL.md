@@ -32,9 +32,10 @@ Start Chrome on a random free port with remote debugging.
 ```bash
 ./scripts/nav.js https://example.com
 ./scripts/nav.js https://example.com --new
+./scripts/nav.js https://example.com --retry 3
 ```
 
-Navigate current tab or open new tab.
+Navigate current tab or open new tab. Use `--retry N` to automatically retry up to N times; if Chrome is found to be dead between attempts it is restarted transparently before the next try.
 
 ## Evaluate JavaScript
 
@@ -42,9 +43,10 @@ Navigate current tab or open new tab.
 ./scripts/eval.js 'document.title'
 ./scripts/eval.js 'document.querySelectorAll("a").length'
 ./scripts/eval.js 'JSON.stringify(Array.from(document.querySelectorAll("a")).map(a => ({ text: a.textContent.trim(), href: a.href })).filter(link => !link.href.startsWith("https://")))'
+./scripts/eval.js --retry 3 'document.title'
 ```
 
-Execute JavaScript in active tab (async context).  Be careful with string escaping, best to use single quotes.
+Execute JavaScript in active tab (async context). Be careful with string escaping, best to use single quotes. Use `--retry N` to automatically retry up to N times with Chrome restart on failure.
 
 ## Screenshot
 
